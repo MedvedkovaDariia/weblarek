@@ -98,3 +98,118 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+### Данные
+В приложении реализовано два интерфейса: items и buyer. Items предназначен для карточек товара и формирования списка из них. Интерфейс Buyer предназначен для работы с данными покупателя.
+
+interface IProduct {
+  id: string;
+  description: string;
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+} 
+
+
+interface IBuyer {
+  payment: TPayment;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+Также используются следующие типы данных:
+
+
+type TPayment = 'card' | 'cash';  - способ оплаты
+
+type IOrderData = {               - данные для отправки заказа
+  payment: TPayment;
+  email: string;
+  phone: string;
+  address: string;
+  total: number;
+  items: string[];   // массив id товаров
+};
+
+
+interface IProductsResponse {     - ответ сервера при получении товаров
+  items: IProduct[];
+  total: number;
+}
+
+
+interface IOrderResult {         -  Ответ сервера при оформлении заказа
+  id: string;
+  total: number;
+}
+
+### Модели данных
+
+#### Класс  ProductsModel (каталог товаров)
+Хранит массив всех товаров  и выбранный товар для подробного отображения.
+
+Поля класса:
+ private _items[]: IProduct[]; - хранит общий список (массив) товаров
+ private _selectedItem: IProduct | null: - хранит выбранный товара
+
+
+Методы класса:
+`setItems(items: IProduct[]): void` - сохранение массив товаров, принимает на вход массив объектор(товаров) типа IProduct[]
+`getItems(): IProduct[]` - получение массива товаров из модели, возвращает массив объектов типа IProduct;
+`getItemsById(id: string): IProduct| undefined` - получение одного товара по его id, принимает на вход id товара типа string;
+`setSelectedItem(item: IProduct): void` - сохранение товара для подробного отображения, принимает на вход объект item типа IProduct;
+`getSelectedItem(): IProduct | null` - получение товара для подробного отображения, возращает либо объект типа IProduct, либо null.
+	
+
+#### Класс  CartModel (корзина)
+Хранит массив товаров, выбранных покупателем для покупки.
+
+Поля класса:
+  private _items: IProduct[] = []; - массив товаров в корзине
+
+
+Методы класса:
+`getItems(): IProduct[]` - получение массива товаров, которые находятся в корзине;
+`addItem(item: IProduct): void` - добавление товара (если его еще нет);
+`removeItem(id: string): void` - удаление товара, полученного в параметре из массива корзины;
+`clear(): void`- очистка корзины;
+`getTotalPrice(): number;` - получение стоимости всех товаров в корзине;
+`getCount(): number` - получение количества товаров в корзине;
+`contains(id: string): boolean;` - проверка наличия товара в корзине по его id.
+
+####Класс  BayerModel (покупатель)
+Хранит следующие данные: вид оплаты, адреc, телефон, email.
+
+Поля класса:
+  private _payment: TPayment | null - способ оплаты типа TPayment или null, если способ оплаты не выбран;
+  private _address: string - адрес доставки;
+  private _email: string - е-mail покупателя;
+  private _phone: string - номер телефона покупателя.
+
+Методы класса:
+`setData(data: Partial<IBuyer>): void` - сохранение данных в модели. Один общий метод, возможность сохранить только одно значение, например, только адрес или только телефон, не удалив при этом значения других полей, которые уже могут храниться в классе;
+`getData(): IBuyer;` - получение всех данных покупателя;
+`clear(): void;` - очистка данных покупателя;
+`validate(): TValidationErrors;` - валидация данных. Поле является валидным, если оно не пустое. Метод валидации дает возможность определить не только валидность каждого отдельного поля, но и предоставляет информацию об ошибке, связанной с проверкой конкретного значения.
+
+Используемые типы:
+type TValidationErrors = Partial<Record<keyof IBuyer, string>>;
+
+
+### Слой коммуникации
+
+#### Класс LarekApi
+Обеспечивает обмен данными с сервером. Использует композицию с классом `Api` из базового слоя для выполнения HTTP-запросов.
+
+Конструктор: принимает экземпляр класса `Api` (из `base/api`).
+
+Поля класса:  
+- `_api: Api` – экземпляр класса `Api` для выполнения запросов.
+
+Методы:  
+`getProducts(): Promise<IProductsResponse>` – выполняет GET-запрос к эндпоинту `/product/` и возвращает промис с объектом, содержащим массив товаров и общее количество.
+`postOrder(orderData: IOrderData): Promise<IOrderResult>` – выполняет POST-запрос к эндпоинту `/order/` с данными заказа (способ оплаты, email, телефон, адрес, общая сумма, массив id товаров) и возвращает промис с объектом подтверждения заказа (id заказа и итоговая сумма).
+
+Используемые типы:  
+`IProductsResponse`, `IOrderData`, `IOrderResult` определены в `src/types/index.ts`.
