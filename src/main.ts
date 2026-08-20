@@ -22,7 +22,7 @@ console.log('Данные о покупателе: ', buyerModel.getData());
 
 // Проверка работоспособности с данными с сервера
 console.log('=== ЗАПРОС К СЕРВЕРУ ===');
-const baseUrl = import.meta.env.VITE_API_ORIGIN;
+const baseUrl = `${import.meta.env.VITE_API_ORIGIN}/api/weblarek`;
 const api  = new Api(baseUrl);
 const larekApi = new LarekApi(api);
 
