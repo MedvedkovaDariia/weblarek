@@ -17,21 +17,17 @@ export interface IProduct {
 } 
 
 export interface IBuyer {
-  payment: TPayment;
+  payment: TPayment | null;
   email: string;
   phone: string;
   address: string;
 } 
 
 // Тип для данных, отправляемых на сервер при оформлении заказа
-export type IOrderData = {
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
+export type IOrderData = IBuyer & {
   total: number;
-  items: string[];  // массив id товаров
-};
+  items: string[];
+}; 
 
 // Тип ответа сервера при получении списка товаров
 export interface IProductsResponse {

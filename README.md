@@ -6,6 +6,11 @@
 - src/ — исходные файлы проекта
 - src/components/ — папка с JS компонентами
 - src/components/base/ — папка с базовым кодом
+- src/components/models — папка с моделями данных
+- src/components/LarekApi.ts - класс для связи с сервером.
+- src/types/ — файлы с типами и интерфейсами
+- src/utils/ — вспомогательные утилиты и константы
+
 
 Важные файлы:
 - index.html — HTML-файл главной страницы
@@ -123,14 +128,11 @@ interface IBuyer {
 
 type TPayment = 'card' | 'cash';  - способ оплаты
 
-type IOrderData = {               - данные для отправки заказа
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
+
+export type IOrderData = IBuyer & {   - данные для отправки заказа
   total: number;
-  items: string[];   // массив id товаров
-};
+  items: string[];
+}; 
 
 
 interface IProductsResponse {     - ответ сервера при получении товаров
@@ -150,8 +152,8 @@ interface IOrderResult {         -  Ответ сервера при оформ�
 Хранит массив всех товаров  и выбранный товар для подробного отображения.
 
 Поля класса:
- private _items[]: IProduct[]; - хранит общий список (массив) товаров
- private _selectedItem: IProduct | null: - хранит выбранный товара
+ private items[]: IProduct[]; - хранит общий список (массив) товаров
+ private selectedItem: IProduct | null: - хранит выбранный товара
 
 
 Методы класса:
@@ -166,7 +168,7 @@ interface IOrderResult {         -  Ответ сервера при оформ�
 Хранит массив товаров, выбранных покупателем для покупки.
 
 Поля класса:
-  private _items: IProduct[] = []; - массив товаров в корзине
+  private items: IProduct[] = []; - массив товаров в корзине
 
 
 Методы класса:
@@ -182,10 +184,10 @@ interface IOrderResult {         -  Ответ сервера при оформ�
 Хранит следующие данные: вид оплаты, адреc, телефон, email.
 
 Поля класса:
-  private _payment: TPayment | null - способ оплаты типа TPayment или null, если способ оплаты не выбран;
-  private _address: string - адрес доставки;
-  private _email: string - е-mail покупателя;
-  private _phone: string - номер телефона покупателя.
+  private payment: TPayment | null - способ оплаты типа TPayment или null, если способ оплаты не выбран;
+  private address: string - адрес доставки;
+  private email: string - е-mail покупателя;
+  private phone: string - номер телефона покупателя.
 
 Методы класса:
 `setData(data: Partial<IBuyer>): void` - сохранение данных в модели. Один общий метод, возможность сохранить только одно значение, например, только адрес или только телефон, не удалив при этом значения других полей, которые уже могут храниться в классе;
@@ -200,16 +202,19 @@ type TValidationErrors = Partial<Record<keyof IBuyer, string>>;
 ### Слой коммуникации
 
 #### Класс LarekApi
-Обеспечивает обмен данными с сервером. Использует композицию с классом `Api` из базового слоя для выполнения HTTP-запросов.
+Обеспечивает обмен данными с сервером. Использует композицию с классом `Api` из базового слоя для выполнения HTTP-запросов, но зависит от интерфейса `IApi`, что позволяет легко заменять реализацию.
 
-Конструктор: принимает экземпляр класса `Api` (из `base/api`).
+Конструктор:  
+`constructor(api: IApi)` – принимает экземпляр объекта, реализующего интерфейс `IApi` (например, класс `Api` из `base/api`).
 
 Поля класса:  
-- `_api: Api` – экземпляр класса `Api` для выполнения запросов.
+- `private api: IApi` – экземпляр `IApi` для выполнения HTTP-запросов.
 
 Методы:  
-`getProducts(): Promise<IProductsResponse>` – выполняет GET-запрос к эндпоинту `/product/` и возвращает промис с объектом, содержащим массив товаров и общее количество.
-`postOrder(orderData: IOrderData): Promise<IOrderResult>` – выполняет POST-запрос к эндпоинту `/order/` с данными заказа (способ оплаты, email, телефон, адрес, общая сумма, массив id товаров) и возвращает промис с объектом подтверждения заказа (id заказа и итоговая сумма).
+- `getProducts(): Promise<IProductsResponse>` – выполняет GET-запрос к эндпоинту `/product/` и возвращает промис с объектом, содержащим массив товаров и общее количество.  
+- `postOrder(orderData: TOrderData): Promise<IOrderResult>` – выполняет POST-запрос к эндпоинту `/order/` с данными заказа (способ оплаты, email, телефон, адрес, общая сумма, массив id товаров) и возвращает промис с объектом подтверждения заказа (id заказа и итоговая сумма).
 
-Используемые типы:  
-`IProductsResponse`, `IOrderData`, `IOrderResult` определены в `src/types/index.ts`.
+Используемые типы: (определены в `src/types/index.ts`):  
+- `IProductsResponse` – ответ сервера с массивом товаров.  
+- `TOrderData` – тип данных заказа (расширяет `IBuyer` и добавляет `total` и `items`).  
+- `IOrderResult` – ответ сервера после оформления заказа.
